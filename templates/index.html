@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#0a0c10"/>
+<title>Sell Signal Screener</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#0a0c10;--panel:#111419;--border:#1e2330;
+  --red:#ff3b5c;--red-dim:#7a1a28;--orange:#ff8c42;
+  --yellow:#ffd166;--green:#06d6a0;--white:#e8eaf0;--grey:#4a5060;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--white);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
+
+.header{background:#0d0f14;border-bottom:1px solid var(--border);padding:18px 16px;position:sticky;top:0;z-index:100;}
+.header-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:12px;}
+.logo-dot{width:10px;height:10px;border-radius:50%;background:var(--red);box-shadow:0 0 12px var(--red);flex-shrink:0;animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 12px var(--red);}50%{box-shadow:0 0 28px var(--red);}}
+.header h1{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;letter-spacing:.04em;}
+.header h1 span{color:var(--red);}
+.badge{margin-left:auto;font-size:.6rem;color:var(--grey);background:var(--border);padding:3px 8px;border-radius:4px;letter-spacing:.08em;}
+
+.main{max-width:640px;margin:0 auto;padding:16px;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px;}
+.card-title{font-family:'Syne',sans-serif;font-size:.72rem;font-weight:700;color:var(--grey);letter-spacing:.12em;text-transform:uppercase;margin-bottom:16px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:.68rem;color:var(--grey);margin-bottom:6px;letter-spacing:.06em;}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+select,input[type=number]{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--white);font-family:'JetBrains Mono',monospace;font-size:.85rem;padding:10px 12px;border-radius:8px;outline:none;-webkit-appearance:none;}
+select:focus,input[type=number]:focus{border-color:var(--red);}
+
+.drop-zone{border:2px dashed var(--border);border-radius:10px;padding:26px 16px;text-align:center;cursor:pointer;position:relative;overflow:hidden;transition:all .2s;}
+.drop-zone.has-file{border-color:var(--green);border-style:solid;background:rgba(6,214,160,.04);}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.drop-icon{font-size:1.8rem;margin-bottom:8px;display:block;}
+.drop-text{font-size:.8rem;color:var(--grey);line-height:1.5;}
+.drop-text strong{display:block;color:var(--white);font-size:.85rem;margin-bottom:2px;}
+.file-name{font-size:.78rem;color:var(--green);margin-top:6px;font-weight:600;}
+
+.btn-scan{width:100%;background:var(--red);color:#fff;border:none;font-family:'Syne',sans-serif;font-size:.95rem;font-weight:800;letter-spacing:.08em;padding:15px;border-radius:10px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-scan:disabled{background:var(--grey);cursor:not-allowed;}
+
+/* TERMINAL */
+.terminal-card{background:#080a0d;border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden;display:none;}
+.terminal-card.visible{display:block;}
+.terminal-topbar{background:#0f1117;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:8px;}
+.td{width:10px;height:10px;border-radius:50%;}
+.td-r{background:#ff5f57;}.td-y{background:#febc2e;}.td-g{background:#28c840;}
+.term-title{font-size:.7rem;color:var(--grey);margin-left:6px;letter-spacing:.08em;}
+.term-progress{margin-left:auto;font-size:.7rem;color:var(--yellow);font-weight:600;}
+.progress-bar-track{background:var(--border);height:3px;}
+.progress-bar-fill{height:100%;background:var(--red);width:0%;transition:width .4s ease;}
+.terminal-body{padding:14px;height:300px;overflow-y:auto;font-size:.72rem;line-height:1.75;}
+.terminal-body::-webkit-scrollbar{width:3px;}
+.terminal-body::-webkit-scrollbar-thumb{background:var(--border);}
+.tl{color:#4a5060;}.ti{color:var(--yellow);}.tr{color:var(--white);}.te{color:var(--red);}.td2{color:var(--green);font-weight:600;}
+
+/* SUMMARY */
+.summary-strip{display:none;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.summary-strip.visible{display:grid;}
+.stat-box{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 10px;text-align:center;}
+.stat-num{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;line-height:1;margin-bottom:4px;}
+.stat-label{font-size:.62rem;color:var(--grey);letter-spacing:.08em;text-transform:uppercase;}
+.s-red .stat-num{color:var(--red);}.s-wh .stat-num{color:var(--white);}.s-or .stat-num{color:var(--orange);}
+
+/* RESULTS */
+.results-section{display:none;}
+.results-section.visible{display:block;}
+.section-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.section-head h2{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;}
+.count-pill{font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:20px;margin-left:auto;}
+.pill-red{background:var(--red-dim);color:var(--red);}.pill-grey{background:var(--border);color:var(--grey);}
+
+.stock-row{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .2s;}
+.stock-row:hover{border-color:var(--red);}
+.stock-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.score-badge{min-width:44px;height:44px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
+.score-badge .num{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;line-height:1;}
+.score-badge .lbl{font-size:.5rem;opacity:.7;margin-top:1px;}
+.ss{background:rgba(255,59,92,.15);border:1px solid var(--red-dim);color:var(--red);}
+.sm{background:rgba(255,140,66,.12);border:1px solid #7a4a20;color:var(--orange);}
+.sw{background:rgba(255,209,102,.1);border:1px solid #6a5a20;color:var(--yellow);}
+.sn{background:var(--bg);border:1px solid var(--border);color:var(--grey);}
+.stock-info{flex:1;min-width:0;}
+.stock-symbol{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;margin-bottom:3px;}
+.signal-tag{font-size:.68rem;font-weight:600;padding:2px 7px;border-radius:4px;display:inline-block;}
+.ts{background:var(--red-dim);color:var(--red);}.tm{background:rgba(255,140,66,.15);color:var(--orange);}
+.tw{background:rgba(255,209,102,.12);color:var(--yellow);}.tn{background:var(--border);color:var(--grey);}
+.stock-prices{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.price-cell{background:var(--bg);border-radius:6px;padding:7px 6px;text-align:center;}
+.p-lbl{font-size:.55rem;color:var(--grey);margin-bottom:3px;}
+.p-val{font-size:.75rem;font-weight:600;}
+.pe{color:var(--white);}.psl{color:var(--red);}.pt1{color:var(--green);}.prr{color:var(--yellow);}
+.signals-drawer{display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px;}
+.signals-drawer.open{display:block;}
+.signal-item{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.7rem;}
+.signal-item:last-child{border-bottom:none;}
+.sig-name{color:var(--grey);min-width:80px;}.sig-val{color:var(--white);text-align:right;flex:1;padding-left:8px;}
+
+.btn-download{width:100%;background:transparent;border:1px solid var(--green);color:var(--green);font-family:'JetBrains Mono',monospace;font-size:.8rem;font-weight:600;padding:12px;border-radius:10px;cursor:pointer;transition:all .2s;margin-top:16px;}
+.btn-download:hover{background:rgba(6,214,160,.08);}
+.error-list{background:rgba(255,59,92,.05);border:1px solid var(--red-dim);border-radius:10px;padding:14px;margin-top:12px;font-size:.72rem;color:var(--grey);display:none;}
+.error-list.visible{display:block;}
+.error-list-title{color:var(--red);font-weight:600;margin-bottom:8px;}
+.error-list ul{padding-left:14px;}.error-list li{margin-bottom:3px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <div class="logo-dot"></div>
+    <h1>SELL<span>SCAN</span></h1>
+    <div class="badge">11-INDICATOR</div>
+  </div>
+</header>
+<main class="main">
+  <div class="card">
+    <div class="card-title">Configure Scan</div>
+    <div class="field">
+      <label>STOCKS LIST (.xlsx)</label>
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".xlsx,.xls"/>
+        <span class="drop-icon">📂</span>
+        <div class="drop-text"><strong>Tap to select Excel file</strong>Symbol column auto-detected</div>
+        <div class="file-name" id="fileName" style="display:none"></div>
+      </div>
+    </div>
+    <div class="row-2">
+      <div class="field"><label>EXCHANGE</label>
+        <select id="exchange">
+          <option value="NSE" selected>NSE 🇮🇳</option>
+          <option value="BSE">BSE 🇮🇳</option>
+          <option value="US">US 🇺🇸</option>
+        </select>
+      </div>
+      <div class="field"><label>PERIOD</label>
+        <select id="period">
+          <option value="1mo">1 Month</option>
+          <option value="3mo" selected>3 Months</option>
+          <option value="6mo">6 Months</option>
+          <option value="1y">1 Year</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>MIN SCORE FOR SELL (0–10)</label>
+      <input type="number" id="minScore" value="3.5" min="0" max="10" step="0.5"/>
+    </div>
+    <button class="btn-scan" id="btnScan" onclick="startScan()">⚡ RUN SCAN</button>
+  </div>
+
+  <!-- TERMINAL -->
+  <div class="terminal-card" id="termCard">
+    <div class="terminal-topbar">
+      <div class="td td-r"></div><div class="td td-y"></div><div class="td td-g"></div>
+      <span class="term-title">SCAN LOG</span>
+      <span class="term-progress" id="termPct">0%</span>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="pBar"></div></div>
+    <div class="terminal-body" id="termBody"></div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="summary-strip" id="summaryStrip">
+    <div class="stat-box s-red"> <div class="stat-num" id="sSell">0</div> <div class="stat-label">Sell Signals</div></div>
+    <div class="stat-box s-wh">  <div class="stat-num" id="sTotal">0</div><div class="stat-label">Total Scanned</div></div>
+    <div class="stat-box s-or">  <div class="stat-num" id="sErr">0</div>  <div class="stat-label">Errors</div></div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-section" id="resultsSection">
+    <div class="section-head"><h2>🔴 Sell Signals</h2><div class="count-pill pill-red" id="sellPill">0</div></div>
+    <div id="sellList"></div>
+    <div class="section-head" style="margin-top:20px"><h2>⚪ No Signal</h2><div class="count-pill pill-grey" id="holdPill">0</div></div>
+    <div id="holdList"></div>
+    <div class="error-list" id="errorList">
+      <div class="error-list-title">⚠️ Failed to fetch data</div>
+      <ul id="errorUl"></ul>
+    </div>
+    <button class="btn-download" id="btnDownload" onclick="downloadExcel()">⬇ Download Excel Report (.xlsx)</button>
+  </div>
+</main>
+
+<script>
+let lastResults = null;
+let pollTimer   = null;
+let lastSeen    = 0;
+let jobId       = null;
+
+document.getElementById('fileInput').addEventListener('change', function() {
+  if (this.files[0]) {
+    document.getElementById('dropZone').classList.add('has-file');
+    const fn = document.getElementById('fileName');
+    fn.style.display = 'block';
+    fn.textContent = '✅ ' + this.files[0].name;
+  }
+});
+
+function termLine(text, cls) {
+  const body = document.getElementById('termBody');
+  const d = document.createElement('div');
+  d.className = cls;
+  d.textContent = text;
+  body.appendChild(d);
+  body.scrollTop = body.scrollHeight;
+}
+
+async function startScan() {
+  const fi = document.getElementById('fileInput');
+  if (!fi.files[0]) { alert('Please select an Excel file first!'); return; }
+
+  const btn = document.getElementById('btnScan');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Uploading…';
+
+  // Reset UI
+  document.getElementById('termBody').innerHTML = '';
+  document.getElementById('termCard').classList.add('visible');
+  document.getElementById('summaryStrip').classList.remove('visible');
+  document.getElementById('resultsSection').classList.remove('visible');
+  document.getElementById('termPct').textContent = '0%';
+  document.getElementById('pBar').style.width = '0%';
+  lastSeen = 0;
+
+  const fd = new FormData();
+  fd.append('file', fi.files[0]);
+  fd.append('exchange', document.getElementById('exchange').value);
+  fd.append('period',   document.getElementById('period').value);
+  fd.append('min_score', document.getElementById('minScore').value);
+
+  try {
+    const res  = await fetch('/start_scan', { method:'POST', body: fd });
+    const data = await res.json();
+    if (data.error) { alert('Error: ' + data.error); resetBtn(); return; }
+    jobId = data.job_id;
+    btn.innerHTML = '<div class="spinner"></div> Scanning…';
+    pollTimer = setInterval(poll, 1500);
+  } catch(e) {
+    alert('Upload failed: ' + e.message);
+    resetBtn();
+  }
+}
+
+async function poll() {
+  try {
+    const res  = await fetch(`/status/${jobId}?last_seen=${lastSeen}`);
+    const data = await res.json();
+    if (data.error) { termLine('❌ ' + data.error, 'te'); stopPoll(); return; }
+
+    // Render new log lines
+    const clsMap = { log:'tl', info:'ti', result:'tr', error:'te' };
+    for (const ev of data.logs) {
+      termLine(ev.msg, clsMap[ev.kind] || 'tl');
+    }
+    lastSeen = data.total_logs;
+
+    // Update progress
+    const p = data.progress;
+    if (p && p.total > 0) {
+      const pct = Math.round((p.current / p.total) * 100);
+      document.getElementById('termPct').textContent = pct + '%';
+      document.getElementById('pBar').style.width = pct + '%';
+      document.getElementById('btnScan').innerHTML =
+        `<div class="spinner"></div> ${p.current} / ${p.total}`;
+    }
+
+    if (data.done) {
+      stopPoll();
+      termLine('', 'tl');
+      termLine('══════════════════════════════════════', 'tl');
+      termLine('✅  SCAN COMPLETE', 'td2');
+      if (data.result) {
+        lastResults = data.result;
+        renderResults(data.result);
+      } else if (data.error) {
+        termLine('❌ ' + data.error, 'te');
+      }
+      resetBtn();
+    }
+  } catch(e) {
+    // network blip — keep polling silently
+  }
+}
+
+function stopPoll() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+function resetBtn() {
+  const btn = document.getElementById('btnScan');
+  btn.disabled = false;
+  btn.innerHTML = '⚡ RUN SCAN';
+}
+
+function scoreClass(s) {
+  return s>=7?'ss':s>=5?'sm':s>=3.5?'sw':'sn';
+}
+function tagClass(sig) {
+  if (sig.includes('STRONG')) return 'ts';
+  if (sig.includes('SELL') && !sig.includes('WEAK')) return 'tm';
+  if (sig.includes('WEAK')) return 'tw';
+  return 'tn';
+}
+function renderStockRow(r) {
+  const sc=scoreClass(r.score), tc=tagClass(r.signal);
+  const sigHtml = Object.entries(r.signals||{}).map(([k,v])=>
+    `<div class="signal-item"><span class="sig-name">${k}</span><span class="sig-val">${v}</span></div>`
+  ).join('');
+  return `<div class="stock-row" onclick="toggleDrawer(this)">
+    <div class="stock-top">
+      <div class="score-badge ${sc}"><div class="num">${r.score}</div><div class="lbl">/10</div></div>
+      <div class="stock-info">
+        <div class="stock-symbol">${r.symbol}</div>
+        <span class="signal-tag ${tc}">${r.signal}</span>
+      </div>
+    </div>
+    <div class="stock-prices">
+      <div class="price-cell"><div class="p-lbl">ENTRY</div><div class="p-val pe">₹${r.entry}</div></div>
+      <div class="price-cell"><div class="p-lbl">STOP LOSS</div><div class="p-val psl">₹${r.stop_loss}</div></div>
+      <div class="price-cell"><div class="p-lbl">TARGET 1</div><div class="p-val pt1">₹${r.target1}</div></div>
+      <div class="price-cell"><div class="p-lbl">R:R</div><div class="p-val prr">${r.rr_ratio}</div></div>
+    </div>
+    ${sigHtml?`<div class="signals-drawer">${sigHtml}</div>`:''}
+  </div>`;
+}
+function toggleDrawer(row) {
+  const d = row.querySelector('.signals-drawer');
+  if (d) d.classList.toggle('open');
+}
+function renderResults(data) {
+  document.getElementById('sSell').textContent  = data.sell_count;
+  document.getElementById('sTotal').textContent = data.total;
+  document.getElementById('sErr').textContent   = data.error_count;
+  document.getElementById('summaryStrip').classList.add('visible');
+  document.getElementById('sellPill').textContent = data.sell_count;
+  document.getElementById('sellList').innerHTML = data.sell.length
+    ? data.sell.map(renderStockRow).join('')
+    : '<div style="color:var(--grey);font-size:.8rem;padding:12px 0">No sell signals found.</div>';
+  document.getElementById('holdPill').textContent = data.hold_count;
+  document.getElementById('holdList').innerHTML = data.hold.length
+    ? data.hold.map(renderStockRow).join('')
+    : '<div style="color:var(--grey);font-size:.8rem;padding:12px 0">—</div>';
+  const errs = Object.entries(data.errors||{});
+  const errDiv = document.getElementById('errorList');
+  if (errs.length) {
+    document.getElementById('errorUl').innerHTML = errs.map(([s,m])=>
+      `<li><strong style="color:var(--white)">${s}</strong> — ${m}</li>`).join('');
+    errDiv.classList.add('visible');
+  } else { errDiv.classList.remove('visible'); }
+  document.getElementById('resultsSection').classList.add('visible');
+  document.getElementById('resultsSection').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function downloadExcel() {
+  if (!lastResults) return;
+  const btn = document.getElementById('btnDownload');
+  btn.textContent = '⏳ Generating…'; btn.disabled = true;
+  const res = await fetch('/download', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({sell:lastResults.sell, hold:lastResults.hold})
+  });
+  if (res.ok) {
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href=url; a.download='sell_signals.xlsx'; a.click();
+    URL.revokeObjectURL(url);
+  } else { alert('Download failed'); }
+  btn.textContent='⬇ Download Excel Report (.xlsx)'; btn.disabled=false;
+}
+</script>
+</body>
+</html>
